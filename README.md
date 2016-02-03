@@ -1,5 +1,5 @@
-A library for smooth swiping on touch devices.
+A library for smooth touch-based content sliders.
 
-To run the example in `index.html`
+See the sample app under `/example`
 
-    npm start
+    cd example && npm start
