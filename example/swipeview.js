@@ -18,13 +18,13 @@ function SwipeView(containerId, slideWidth, slideHeight) {
 
   setupStyles(container, slider, slides)
 
-  const touchStart$ = on(container, "touchstart")
-  const touchMove$  = on(container, "touchmove")
-  const touchEnd$   = on(container, "touchend")
+  const touchStart$ = createEventStream(container, "touchstart")
+  const touchMove$  = createEventStream(container, "touchmove")
+  const touchEnd$   = createEventStream(container, "touchend")
 
-  let touchEvents$ = merge(touchStart$, touchMove$, touchEnd$)
+  let touchEvents$ = mergeEventStreams(touchStart$, touchMove$, touchEnd$)
 
-  touchEvents$ = map(touchEvents$, event => {
+  touchEvents$ = mapEventStream(touchEvents$, event => {
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
@@ -36,7 +36,7 @@ function SwipeView(containerId, slideWidth, slideHeight) {
     }
   })
 
-  touchEvents$ = foldp(touchEvents$, (prev, curr) => {
+  touchEvents$ = foldEventStream(touchEvents$, (prev, curr) => {
     curr.startX = (curr.type == "touchstart") ? curr.pageX : prev.startX
     curr.startTime = (curr.type == "touchstart") ? curr.time : prev.startTime
     curr.displacement = curr.pageX - curr.startX
@@ -122,13 +122,13 @@ function SwipeView(containerId, slideWidth, slideHeight) {
 // Functional Reactive Programming utils from frpjs
 // See: https://github.com/santoshrajan/frpjs
 
-function on(element, name, useCapture) {
+function createEventStream(element, name, useCapture) {
   return function(next) {
     element.addEventListener(name, next, !!useCapture)
   }
  }
 
-function map(eventStream, valueTransform) {
+function mapEventStream(eventStream, valueTransform) {
   return function(next) {
     eventStream(function(value) {
       next(valueTransform(value))
@@ -136,7 +136,7 @@ function map(eventStream, valueTransform) {
   }
 }
 
-function foldp(eventStream, step, initial) {
+function foldEventStream(eventStream, step, initial) {
   return (function(next) {
     let accumulated = initial
     eventStream(function (value) {
@@ -145,7 +145,7 @@ function foldp(eventStream, step, initial) {
   })
 }
 
-function merge() {
+function mergeEventStreams() {
   let eventStreams = Array.prototype.slice.call(arguments)
   return function(next) {
     eventStreams.forEach(function(eventStream) {
