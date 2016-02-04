@@ -90,7 +90,11 @@ function SwipeView(containerId, slideWidth, slideHeight) {
   }
 
   function isFlicked(event) {
-    return (event.time - event.startTime < 200) && (Math.abs(event.displacement) > 50)
+    return getSpeed(event) > 0.4
+  }
+
+  function getSpeed(event) {
+    return Math.abs(event.displacement) / (event.time - event.startTime)
   }
 
   function getPageX(event) {
