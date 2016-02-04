@@ -16,58 +16,10 @@ function SwipeView(containerId, slideWidth, slideHeight) {
 
     const numSlides = slides.length
 
-    setupStyles(container, slider, slides)
+    setupStyles()
+    setupTouchHandler()
 
-    const touchStart$ = createEventStream(container, "touchstart")
-    const touchMove$  = createEventStream(container, "touchmove")
-    const touchEnd$   = createEventStream(container, "touchend")
-
-    let touchEvents$ = mergeEventStreams(touchStart$, touchMove$, touchEnd$)
-
-    touchEvents$ = mapEventStream(touchEvents$, event => {
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-
-        return {
-            type: event.type,
-            pageX: getPageX(event),
-            time: event.timeStamp
-        }
-    })
-
-    touchEvents$ = foldEventStream(touchEvents$, (prev, curr) => {
-        curr.startX = (curr.type == "touchstart") ? curr.pageX : prev.startX
-        curr.startTime = (curr.type == "touchstart") ? curr.time : prev.startTime
-        curr.displacement = curr.pageX - curr.startX
-        curr.slideIndex = prev.slideIndex
-      
-        return curr
-    }, { slideIndex: 0 })
-
-    touchEvents$(event => {
-        if (event.type == "touchmove") {
-            if (canSlideLeft(event) || canSlideRight(event)) {
-                let distance = -(event.slideIndex * slideWidth) + event.displacement
-                move(distance)
-            }
-        }
-
-        if (event.type == "touchend") {
-            if (hasCrossedMidPoint(event) || isFlicked(event)) {
-                if (canSlideRight(event))
-                    event.slideIndex++
-                else if (canSlideLeft(event))
-                    event.slideIndex--
-            }
-
-            let distance = -(event.slideIndex * slideWidth)
-            let time     = isFlicked(event) ? 150 : 300
-            animate(distance, time)
-        }
-    })
-
-    function setupStyles(container, slider, slides) {
+    function setupStyles() {
         container.style["width"]    = slideWidth + "px"
         container.style["height"]   = slideHeight + "px"
         container.style["overflow"] = "hidden"
@@ -80,6 +32,57 @@ function SwipeView(containerId, slideWidth, slideHeight) {
             slide.style["width"]  = slideWidth + "px"
             slide.style["height"] = slideHeight + "px"
             slide.style["float"]  = "left"
+        })
+    }
+
+    function setupTouchHandler() {
+        const touchStart$ = createEventStream(container, "touchstart")
+        const touchMove$  = createEventStream(container, "touchmove")
+        const touchEnd$   = createEventStream(container, "touchend")
+
+        let touchEvents$ = mergeEventStreams(touchStart$, touchMove$, touchEnd$)
+
+        touchEvents$ = mapEventStream(touchEvents$, event => {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+
+            return {
+                type: event.type,
+                pageX: getPageX(event),
+                time: event.timeStamp
+            }
+        })
+
+        touchEvents$ = foldEventStream(touchEvents$, (prev, curr) => {
+            curr.startX = (curr.type == "touchstart") ? curr.pageX : prev.startX
+            curr.startTime = (curr.type == "touchstart") ? curr.time : prev.startTime
+            curr.displacement = curr.pageX - curr.startX
+            curr.slideIndex = prev.slideIndex
+          
+            return curr
+        }, { slideIndex: 0 })
+
+        touchEvents$(event => {
+            if (event.type == "touchmove") {
+                if (canSlideLeft(event) || canSlideRight(event)) {
+                    let distance = -(event.slideIndex * slideWidth) + event.displacement
+                    move(distance)
+                }
+            }
+
+            if (event.type == "touchend") {
+                if (hasCrossedMidPoint(event) || isFlicked(event)) {
+                    if (canSlideRight(event))
+                        event.slideIndex++
+                    else if (canSlideLeft(event))
+                        event.slideIndex--
+                }
+
+                let distance = -(event.slideIndex * slideWidth)
+                let time     = isFlicked(event) ? 150 : 300
+                animate(distance, time)
+            }
         })
     }
 
@@ -116,42 +119,5 @@ function SwipeView(containerId, slideWidth, slideHeight) {
     function move(translateX) {
         slider.style["transition"] = "none"
         slider.style["transform"]  = "translate3d(" + translateX + "px, 0, 0)"
-    }
-}
-
-// Functional Reactive Programming utils from frpjs
-// See: https://github.com/santoshrajan/frpjs
-
-function createEventStream(element, name, useCapture) {
-    return function(next) {
-        element.addEventListener(name, next, !!useCapture)
-    }
-}
-
-function mapEventStream(eventStream, valueTransform) {
-    return function(next) {
-        eventStream(function(value) {
-            next(valueTransform(value))
-        })
-    }
-}
-
-function foldEventStream(eventStream, step, initial) {
-    return (function(next) {
-        let accumulated = initial
-        eventStream(function (value) {
-            next(accumulated = step(accumulated, value))
-        })
-    })
-}
-
-function mergeEventStreams() {
-    let eventStreams = Array.prototype.slice.call(arguments)
-    return function(next) {
-        eventStreams.forEach(function(eventStream) {
-            eventStream(function(value) {
-                next(value)
-            })
-        })
     }
 }
