@@ -26,11 +26,13 @@ function SwipeView(containerId, slideWidth, slideHeight) {
 
   touchEvents$ = map(touchEvents$, event => ({
     type: event.type,
-    pageX: getPageX(event)
+    pageX: getPageX(event),
+    time: event.timeStamp
   }))
 
   touchEvents$ = foldp(touchEvents$, (prev, curr) => {
     curr.startX = (curr.type == "touchstart") ? curr.pageX : prev.startX
+    curr.startTime = (curr.type == "touchstart") ? curr.time : prev.startTime
     curr.displacement = curr.pageX - curr.startX
     curr.slideIndex = prev.slideIndex
   
@@ -39,21 +41,23 @@ function SwipeView(containerId, slideWidth, slideHeight) {
 
   touchEvents$(event => {
     if (event.type == "touchmove") {
-      if (canMoveLeft(event) || canMoveRight(event)) {
-        let moveBy = -(event.slideIndex * slideWidth) + event.displacement
-        move(moveBy)        
+      if (canSlideLeft(event) || canSlideRight(event)) {
+        let distance = -(event.slideIndex * slideWidth) + event.displacement
+        move(distance)
       }
     }
 
     if (event.type == "touchend") {
-      if (Math.abs(event.displacement) > slideWidth/2) {
-        if (canMoveRight(event))
+      if (hasCrossedMidPoint(event) || isFlicked(event)) {
+        if (canSlideRight(event))
           event.slideIndex++
-        else if (canMoveLeft(event))
+        else if (canSlideLeft(event))
           event.slideIndex--
       }
-      let moveBy = -(event.slideIndex * slideWidth)
-      animate(moveBy, 300)
+
+      let distance = -(event.slideIndex * slideWidth)
+      let time     = isFlicked(event) ? 150 : 300
+      animate(distance, time)
     }
   })
 
@@ -73,12 +77,20 @@ function SwipeView(containerId, slideWidth, slideHeight) {
     })
   }
 
-  function canMoveLeft(event) {
+  function canSlideLeft(event) {
     return (event.displacement > 0 && event.slideIndex > 0)
   }
 
-  function canMoveRight(event) {
+  function canSlideRight(event) {
     return (event.displacement < 0 && event.slideIndex < numSlides - 1)
+  }
+
+  function hasCrossedMidPoint(event) {
+    return Math.abs(event.displacement) > slideWidth/2
+  }
+
+  function isFlicked(event) {
+    return (event.time - event.startTime < 200) && (Math.abs(event.displacement) > 50)
   }
 
   function getPageX(event) {
