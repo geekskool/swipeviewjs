@@ -1,4 +1,4 @@
-A library for smooth touch-based content sliders.
+A library for smooth touch-based content sliders built on event streams.
 
 See the sample app under `/example`
 
