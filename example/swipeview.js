@@ -24,11 +24,17 @@ function SwipeView(containerId, slideWidth, slideHeight) {
 
   let touchEvents$ = merge(touchStart$, touchMove$, touchEnd$)
 
-  touchEvents$ = map(touchEvents$, event => ({
-    type: event.type,
-    pageX: getPageX(event),
-    time: event.timeStamp
-  }))
+  touchEvents$ = map(touchEvents$, event => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    return {
+      type: event.type,
+      pageX: getPageX(event),
+      time: event.timeStamp
+    }
+  })
 
   touchEvents$ = foldp(touchEvents$, (prev, curr) => {
     curr.startX = (curr.type == "touchstart") ? curr.pageX : prev.startX
