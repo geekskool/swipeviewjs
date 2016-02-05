@@ -14,25 +14,39 @@ function SwipeView(containerId, slideWidth, slideHeight) {
     const slider    = container.getElementsByClassName(classNames.slider)[0]
     const slides    = slider.getElementsByClassName(classNames.slide)
 
-    const numSlides = slides.length
+    const numSlides   = slides.length
+    const edgePadding = slideWidth / 10
 
     setupStyles()
     setupTouchHandler()
 
     function setupStyles() {
-        container.style["width"]    = slideWidth + "px"
-        container.style["height"]   = slideHeight + "px"
-        container.style["overflow"] = "hidden"
+        let style = document.createElement("style")
+            style = document.head.appendChild(style)
 
-        slider.style["width"]     = numSlides * 100 + "%"
-        slider.style["height"]    = "100%"
-        slider.style["transform"] = "translate3d(0, 0, 0)"
+        style.sheet.insertRule(`
+            .${classNames.container} {
+                width: ${slideWidth}px;
+                height: ${slideHeight}px;
+                overflow: hidden;
+            }
+        `, 0)
 
-        Array.prototype.forEach.call(slides, function(slide) {
-            slide.style["width"]  = slideWidth + "px"
-            slide.style["height"] = slideHeight + "px"
-            slide.style["float"]  = "left"
-        })
+        style.sheet.insertRule(`
+            .${classNames.slider} {
+                width: ${numSlides * 100}%;
+                height: 100%;
+                transform: translate3d(0, 0, 0);
+            }
+        `, 1)
+
+        style.sheet.insertRule(`
+            .${classNames.slide} {
+                width: ${slideWidth}px;
+                height: ${slideHeight}px;
+                float: left;
+            }
+        `, 2)
     }
 
     function setupTouchHandler() {
@@ -43,9 +57,9 @@ function SwipeView(containerId, slideWidth, slideHeight) {
         let touchEvents$ = mergeEventStreams(touchStart$, touchMove$, touchEnd$)
 
         touchEvents$ = mapEventStream(touchEvents$, event => {
-            event.preventDefault();
-            event.stopPropagation();
-            event.stopImmediatePropagation();
+            event.preventDefault()
+            event.stopPropagation()
+            event.stopImmediatePropagation()
 
             return {
                 type: event.type,
@@ -65,7 +79,7 @@ function SwipeView(containerId, slideWidth, slideHeight) {
 
         touchEvents$(event => {
             if (event.type == "touchmove") {
-                if (canSlideLeft(event) || canSlideRight(event)) {
+                if (canSlideLeft(event) || canSlideRight(event) || isPullingEdge(event)) {
                     let distance = -(event.slideIndex * slideWidth) + event.displacement
                     move(distance)
                 }
@@ -94,12 +108,20 @@ function SwipeView(containerId, slideWidth, slideHeight) {
         return (event.displacement < 0 && event.slideIndex < numSlides - 1)
     }
 
+    function isPullingEdge(event) {
+        let distance = -(event.slideIndex * slideWidth) + event.displacement
+        let nMinusOneSlides = (numSlides - 1) * slideWidth // width of (n - 1) slides
+
+        return ((0 < distance && distance < edgePadding) ||
+                (-nMinusOneSlides - edgePadding < distance && distance < -nMinusOneSlides))
+    }
+
     function hasCrossedMidPoint(event) {
         return Math.abs(event.displacement) > slideWidth/2
     }
 
     function isFlicked(event) {
-        return getSpeed(event) > 0.4
+        return getSpeed(event) > 1
     }
 
     function getSpeed(event) {
