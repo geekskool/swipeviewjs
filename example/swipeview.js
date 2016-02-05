@@ -20,19 +20,32 @@ function SwipeView(containerId, slideWidth, slideHeight) {
     setupTouchHandler()
 
     function setupStyles() {
-        container.style["width"]    = slideWidth + "px"
-        container.style["height"]   = slideHeight + "px"
-        container.style["overflow"] = "hidden"
+        let style = document.createElement("style")
+            style = document.head.appendChild(style)
 
-        slider.style["width"]     = numSlides * 100 + "%"
-        slider.style["height"]    = "100%"
-        slider.style["transform"] = "translate3d(0, 0, 0)"
+        style.sheet.insertRule(`
+            .${classNames.container} {
+                width: ${slideWidth}px;
+                height: ${slideHeight}px;
+                overflow: hidden;
+            }
+        `, 0)
 
-        Array.prototype.forEach.call(slides, function(slide) {
-            slide.style["width"]  = slideWidth + "px"
-            slide.style["height"] = slideHeight + "px"
-            slide.style["float"]  = "left"
-        })
+        style.sheet.insertRule(`
+            .${classNames.slider} {
+                width: ${numSlides * 100}%;
+                height: 100%;
+                transform: translate3d(0, 0, 0);
+            }
+        `, 1)
+
+        style.sheet.insertRule(`
+            .${classNames.slide} {
+                width: ${slideWidth}px;
+                height: ${slideHeight}px;
+                float: left;
+            }
+        `, 2)
     }
 
     function setupTouchHandler() {
