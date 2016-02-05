@@ -99,7 +99,7 @@ function SwipeView(containerId, slideWidth, slideHeight) {
     }
 
     function isFlicked(event) {
-        return getSpeed(event) > 0.4
+        return getSpeed(event) > 1
     }
 
     function getSpeed(event) {
