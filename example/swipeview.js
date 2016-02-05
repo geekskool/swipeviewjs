@@ -56,9 +56,9 @@ function SwipeView(containerId, slideWidth, slideHeight) {
         let touchEvents$ = mergeEventStreams(touchStart$, touchMove$, touchEnd$)
 
         touchEvents$ = mapEventStream(touchEvents$, event => {
-            event.preventDefault();
-            event.stopPropagation();
-            event.stopImmediatePropagation();
+            event.preventDefault()
+            event.stopPropagation()
+            event.stopImmediatePropagation()
 
             return {
                 type: event.type,
