@@ -79,8 +79,11 @@ function SwipeView(containerId, slideWidth, slideHeight) {
 
         touchEvents$(event => {
             if (event.type == "touchmove") {
-                if (canSlideLeft(event) || canSlideRight(event) || isPullingEdge(event)) {
+                if (canSlideLeft(event) || canSlideRight(event)) {
                     let distance = -(event.slideIndex * slideWidth) + event.displacement
+                    move(distance)
+                } else if (isPullingEdge(event)) {
+                    let distance = -(event.slideIndex * slideWidth) + (edgePadding / slideWidth) * event.displacement
                     move(distance)
                 }
             }
@@ -109,11 +112,11 @@ function SwipeView(containerId, slideWidth, slideHeight) {
     }
 
     function isPullingEdge(event) {
-        let distance = -(event.slideIndex * slideWidth) + event.displacement
+        let sliderPosition = slider.getBoundingClientRect().left
         let nMinusOneSlides = (numSlides - 1) * slideWidth // width of (n - 1) slides
 
-        return ((0 < distance && distance < edgePadding) ||
-                (-nMinusOneSlides - edgePadding < distance && distance < -nMinusOneSlides))
+        return ((0 <= sliderPosition && sliderPosition < edgePadding) ||
+                (-nMinusOneSlides - edgePadding < sliderPosition && sliderPosition <= -nMinusOneSlides))
     }
 
     function hasCrossedMidPoint(event) {
