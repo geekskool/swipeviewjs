@@ -2,7 +2,7 @@
   "name": "swipeviewjs",
   "version": "0.0.1",
   "description": "A library for smooth touch-based content sliders",
-  "main": "swipeview.js",
+  "main": "src/swipeview.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/geekskool/swipeviewjs.git"
