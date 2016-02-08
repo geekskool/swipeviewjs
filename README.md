@@ -12,17 +12,17 @@ Create a container for holding the slides. Use `swipeview-container`, `swipeview
 
     <div class="swipeview-container" id="container">
         <div class="swipeview-slider" id="slider">
-          <div class="swipeview-slide slide" id="slide-1"></div>
-          <div class="swipeview-slide slide" id="slide-2"></div>
-          <div class="swipeview-slide slide" id="slide-3"></div>
-          <div class="swipeview-slide slide" id="slide-4"></div>    
+            <div class="swipeview-slide slide" id="slide-1"></div>
+            <div class="swipeview-slide slide" id="slide-2"></div>
+            <div class="swipeview-slide slide" id="slide-3"></div>
+            <div class="swipeview-slide slide" id="slide-4"></div>    
         </div>
     </div>
 
 Load `frp.js` and `swipeview.js` and call `SwipeView` with the container id.
 
-      <script src="frp.js"></script>
-      <script src="swipeview.js"></script>
+      <script src="lib/frp.js"></script>
+      <script src="lib/swipeview.js"></script>
       <script>
-        SwipeView("container")
+          SwipeView("container")
       </script>
