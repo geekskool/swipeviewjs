@@ -8,21 +8,20 @@ See the sample app under `/example`
 
 **Usage**
 
-Create a container for holding the slides. Use `swipeview-container`, `swipeview-slider` and `swipeview-slide` as shown below.
+Create a container div as per the structure below.
 
-    <div class="swipeview-container" id="container">
-        <div class="swipeview-slider" id="slider">
-            <div class="swipeview-slide slide" id="slide-1"></div>
-            <div class="swipeview-slide slide" id="slide-2"></div>
-            <div class="swipeview-slide slide" id="slide-3"></div>
-            <div class="swipeview-slide slide" id="slide-4"></div>    
+    <div id="container">
+        <div id="slider">
+            <div id="slide-1"></div>
+            <div id="slide-2"></div>
+            <div id="slide-3"></div>
+            <div id="slide-4"></div>    
         </div>
     </div>
 
-Load `frp.js` and `swipeview.js` and call `SwipeView` with the container id.
+Require `swipeview` and call it with the container element.
 
-      <script src="lib/frp.js"></script>
-      <script src="lib/swipeview.js"></script>
-      <script>
-          SwipeView("container")
-      </script>
+    const swipeview = require('./lib/swipeview')
+
+    const container = document.getElementById("container")
+    swipeview(container)
