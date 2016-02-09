@@ -2,7 +2,9 @@
 "use strict"
 
 const swipeview = require('./lib/swipeview')
-swipeview("container")
+
+const container = document.getElementById("container")
+swipeview(container)
 },{"./lib/swipeview":3}],2:[function(require,module,exports){
 // Functional Reactive Programming utils from frpjs
 // See: https://github.com/santoshrajan/frpjs
@@ -51,53 +53,33 @@ module.exports = frp
 
 const frp = require("./frp.js")
 
-const classNames = {
-    "container": "swipeview-container",
-    "slider"   : "swipeview-slider",
-    "slide"    : "swipeview-slide"
-}
-
-module.exports = function(containerId, slideWidth, slideHeight) {
+module.exports = function(container, slideWidth, slideHeight) {
     slideWidth  = slideWidth  || window.innerWidth
     slideHeight = slideHeight || window.innerHeight
 
-    const container = document.getElementById(containerId)
-    const slider    = container.getElementsByClassName(classNames.slider)[0]
-    const slides    = slider.getElementsByClassName(classNames.slide)
+    const slider    = container.firstElementChild
+    const slides    = slider.children
 
     const numSlides   = slides.length
     const edgePadding = slideWidth / 10
 
-    setupStyles()
+    setupStyles(container, slider, slides)
     setupTouchHandler()
 
-    function setupStyles() {
-        let style = document.createElement("style")
-            style = document.head.appendChild(style)
+    function setupStyles(container, slider, slides) {
+        container.style["width"]    = slideWidth + "px"
+        container.style["height"]   = slideHeight + "px"
+        container.style["overflow"] = "hidden"
 
-        style.sheet.insertRule(`
-            .${classNames.container} {
-                width: ${slideWidth}px;
-                height: ${slideHeight}px;
-                overflow: hidden;
-            }
-        `, 0)
+        slider.style["width"]     = numSlides * 100 + "%"
+        slider.style["height"]    = "100%"
+        slider.style["transform"] = "translate3d(0, 0, 0)"
 
-        style.sheet.insertRule(`
-            .${classNames.slider} {
-                width: ${numSlides * 100}%;
-                height: 100%;
-                transform: translate3d(0, 0, 0);
-            }
-        `, 1)
-
-        style.sheet.insertRule(`
-            .${classNames.slide} {
-                width: ${slideWidth}px;
-                height: ${slideHeight}px;
-                float: left;
-            }
-        `, 2)
+        Array.prototype.forEach.call(slides, function(slide) {
+            slide.style["width"]  = slideWidth + "px"
+            slide.style["height"] = slideHeight + "px"
+            slide.style["float"]  = "left"
+        })
     }
 
     function setupTouchHandler() {
