@@ -92,7 +92,7 @@ module.exports = function(container, slideWidth, slideHeight) {
         return curr
     }, { slideIndex: 0 })
 
-    touchEvents$(event => activateEventStream(event, slideWidth, slideHeight, numSlides, edgePadding))
+    touchEvents$(event => activateEventStream(event, slideWidth, numSlides, edgePadding))
 
 }
 
@@ -112,7 +112,7 @@ function setupStyles(container, slider, slides, slideWidth, slideHeight, numSlid
     })
 }
 
-function activateEventStream(event, slideWidth, slideHeight, numSlides, edgePadding) {
+function activateEventStream(event, slideWidth, numSlides, edgePadding) {
     if (event.type == "touchmove") {
         if (canSlideLeft(event) || canSlideRight(event, numSlides)) {
             let distance = -(event.slideIndex * slideWidth) + event.displacement
