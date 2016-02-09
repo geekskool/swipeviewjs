@@ -3,13 +3,15 @@
 
 "use strict"
 
-function createEventStream(element, name, useCapture) {
+const frp = {}
+
+frp.createEventStream = function(element, name, useCapture) {
     return function(next) {
         element.addEventListener(name, next, !!useCapture)
     }
 }
 
-function mapEventStream(eventStream, valueTransform) {
+frp.mapEventStream = function(eventStream, valueTransform) {
     return function(next) {
         eventStream(function(value) {
             next(valueTransform(value))
@@ -17,7 +19,7 @@ function mapEventStream(eventStream, valueTransform) {
     }
 }
 
-function foldEventStream(eventStream, step, initial) {
+frp.foldEventStream = function(eventStream, step, initial) {
     return (function(next) {
         let accumulated = initial
         eventStream(function (value) {
@@ -26,7 +28,7 @@ function foldEventStream(eventStream, step, initial) {
     })
 }
 
-function mergeEventStreams() {
+frp.mergeEventStreams = function() {
     let eventStreams = Array.prototype.slice.call(arguments)
     return function(next) {
         eventStreams.forEach(function(eventStream) {
@@ -36,3 +38,5 @@ function mergeEventStreams() {
         })
     }
 }
+
+module.exports = frp

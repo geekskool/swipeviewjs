@@ -1,12 +1,14 @@
 "use strict"
 
+const frp = require("./frp.js")
+
 const classNames = {
     "container": "swipeview-container",
     "slider"   : "swipeview-slider",
     "slide"    : "swipeview-slide"
 }
 
-function SwipeView(containerId, slideWidth, slideHeight) {
+module.exports = function(containerId, slideWidth, slideHeight) {
     slideWidth  = slideWidth  || window.innerWidth
     slideHeight = slideHeight || window.innerHeight
 
@@ -50,13 +52,13 @@ function SwipeView(containerId, slideWidth, slideHeight) {
     }
 
     function setupTouchHandler() {
-        const touchStart$ = createEventStream(container, "touchstart")
-        const touchMove$  = createEventStream(container, "touchmove")
-        const touchEnd$   = createEventStream(container, "touchend")
+        const touchStart$ = frp.createEventStream(container, "touchstart")
+        const touchMove$  = frp.createEventStream(container, "touchmove")
+        const touchEnd$   = frp.createEventStream(container, "touchend")
 
-        let touchEvents$ = mergeEventStreams(touchStart$, touchMove$, touchEnd$)
+        let touchEvents$ = frp.mergeEventStreams(touchStart$, touchMove$, touchEnd$)
 
-        touchEvents$ = mapEventStream(touchEvents$, event => {
+        touchEvents$ = frp.mapEventStream(touchEvents$, event => {
             event.preventDefault()
             event.stopPropagation()
             event.stopImmediatePropagation()
@@ -68,7 +70,7 @@ function SwipeView(containerId, slideWidth, slideHeight) {
             }
         })
 
-        touchEvents$ = foldEventStream(touchEvents$, (prev, curr) => {
+        touchEvents$ = frp.foldEventStream(touchEvents$, (prev, curr) => {
             curr.startX = (curr.type == "touchstart") ? curr.pageX : prev.startX
             curr.startTime = (curr.type == "touchstart") ? curr.time : prev.startTime
             curr.displacement = curr.pageX - curr.startX
