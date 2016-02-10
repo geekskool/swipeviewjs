@@ -25,3 +25,7 @@ Require `swipeview` and call it with the container element.
 
     const container = document.getElementById("container")
     swipeview(container)
+
+**Note**
+
+Currently tested on Google Chrome on Android devices.
