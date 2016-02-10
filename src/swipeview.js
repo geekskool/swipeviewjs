@@ -7,35 +7,28 @@ module.exports = function(container, slideWidth, slideHeight) {
 
     view.setupStyles()
 
-    const touchStart$ = frp.createEventStream(container, "touchstart")
-    const touchMove$  = frp.createEventStream(container, "touchmove")
-    const touchEnd$   = frp.createEventStream(container, "touchend")
+    let stream$ = frp.compose(
+        frp.createEventStream(container, "touchstart"),
+        frp.merge(frp.createEventStream(container, "touchmove")),
+        frp.merge(frp.createEventStream(container, "touchend")),
 
-    let touchEvents$ = frp.mergeEventStreams(touchStart$, touchMove$, touchEnd$)
-
-    touchEvents$ = frp.mapEventStream(touchEvents$, event => {
-        event.preventDefault()
-        event.stopPropagation()
-        event.stopImmediatePropagation()
-
-        return {
+        frp.map(event => ({
             type: event.type,
             pageX: getPageX(event),
             time: event.timeStamp
-        }
-    })
+        })),
 
-    touchEvents$ = frp.foldEventStream(touchEvents$, (prev, curr) => {
-        curr.startX = (curr.type == "touchstart") ? curr.pageX : prev.startX
-        curr.startTime = (curr.type == "touchstart") ? curr.time : prev.startTime
-        curr.displacement = curr.pageX - curr.startX
-        curr.slideIndex = prev.slideIndex
-      
-        return curr
-    }, { slideIndex: 0 })
+        frp.fold((prev, curr) => {
+            curr.startX = (curr.type == "touchstart") ? curr.pageX : prev.startX
+            curr.startTime = (curr.type == "touchstart") ? curr.time : prev.startTime
+            curr.displacement = curr.pageX - curr.startX
+            curr.slideIndex = prev.slideIndex
 
-    touchEvents$(event => activateEventStream(event, view))
+            return curr
+        }, { slideIndex: 0 })
+    )
 
+    stream$(event => activateEventStream(event, view))
 }
 
 function activateEventStream(event, view) {
@@ -125,7 +118,6 @@ SwipeView.prototype.move = function(translateX) {
     this.slider.style["transition"] = "none"
     this.slider.style["transform"]  = "translate3d(" + translateX + "px, 0, 0)"
 }
-
 
 function getSpeed(event) {
     return Math.abs(event.displacement) / (event.time - event.startTime)
