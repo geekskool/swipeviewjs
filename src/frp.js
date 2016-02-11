@@ -41,12 +41,9 @@ frp.merge = function(eventStreamA) {
     }
 }
 
-frp.compose = function(eventStream) {
-    let operations = Array.prototype.slice.call(arguments, 1)
-    if (operations.length == 0)
-        return eventStream
-    else
-        return frp.compose.apply(null, [operations[0](eventStream)].concat(operations.slice(1)))
+frp.compose = function() {
+    var eventStreams = Array.prototype.slice.call(arguments)
+    return eventStreams.reduce((eventStream, operation) => operation(eventStream))
 }
 
 module.exports = frp

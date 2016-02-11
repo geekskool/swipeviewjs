@@ -25,7 +25,7 @@ frp.map = function(valueTransform) {
             eventStream(function(value) {
                 next(valueTransform(value))
             })
-        }    
+        }
     }
 }
 
@@ -36,7 +36,7 @@ frp.fold = function(step, initial) {
             eventStream(function (value) {
                 next(accumulated = step(accumulated, value))
             })
-        }        
+        }
     }
 }
 
@@ -49,12 +49,9 @@ frp.merge = function(eventStreamA) {
     }
 }
 
-frp.compose = function(eventStream) {
-    let operations = Array.prototype.slice.call(arguments, 1)
-    if (operations.length == 0)
-        return eventStream
-    else
-        return frp.compose.apply(null, [operations[0](eventStream)].concat(operations.slice(1)))
+frp.compose = function() {
+    var eventStreams = Array.prototype.slice.call(arguments)
+    return eventStreams.reduce((eventStream, operation) => operation(eventStream))
 }
 
 module.exports = frp
@@ -72,52 +69,24 @@ module.exports = function(container, slideWidth, slideHeight) {
         frp.createEventStream(container, "touchstart"),
         frp.merge(frp.createEventStream(container, "touchmove")),
         frp.merge(frp.createEventStream(container, "touchend")),
-    
+
         frp.map(event => ({
             type: event.type,
             pageX: getPageX(event),
             time: event.timeStamp
         })),
-    
+
         frp.fold((prev, curr) => {
             curr.startX = (curr.type == "touchstart") ? curr.pageX : prev.startX
             curr.startTime = (curr.type == "touchstart") ? curr.time : prev.startTime
             curr.displacement = curr.pageX - curr.startX
             curr.slideIndex = prev.slideIndex
-          
+
             return curr
         }, { slideIndex: 0 })
     )
 
     stream$(event => activateEventStream(event, view))
-    // const touchStart$ = frp.createEventStream(container, "touchstart")
-    // const touchMove$  = frp.createEventStream(container, "touchmove")
-    // const touchEnd$   = frp.createEventStream(container, "touchend")
-
-    // let touchEvents$ = frp.mergeEventStreams(touchStart$, touchMove$, touchEnd$)
-
-    // touchEvents$ = frp.mapEventStream(touchEvents$, event => {
-    //     event.preventDefault()
-    //     event.stopPropagation()
-    //     event.stopImmediatePropagation()
-
-    //     return {
-    //         type: event.type,
-    //         pageX: getPageX(event),
-    //         time: event.timeStamp
-    //     }
-    // })
-
-    // touchEvents$ = frp.foldEventStream(touchEvents$, (prev, curr) => {
-    //     curr.startX = (curr.type == "touchstart") ? curr.pageX : prev.startX
-    //     curr.startTime = (curr.type == "touchstart") ? curr.time : prev.startTime
-    //     curr.displacement = curr.pageX - curr.startX
-    //     curr.slideIndex = prev.slideIndex
-      
-    //     return curr
-    // }, { slideIndex: 0 })
-
-    // touchEvents$(event => activateEventStream(event, view))
 }
 
 function activateEventStream(event, view) {
