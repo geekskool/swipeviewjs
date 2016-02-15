@@ -1,16 +1,17 @@
 "use strict"
 
-const frp = require("./frp.js")
+import frp from "frpjs"
+import dom from "frpjs/dom"
 
-module.exports = function(container, slideWidth, slideHeight) {
+export default function(container, slideWidth, slideHeight) {
     const view = new SwipeView(container, slideWidth, slideHeight)
 
     view.setupStyles()
 
     let stream$ = frp.compose(
-        frp.createEventStream(container, "touchstart"),
-        frp.merge(frp.createEventStream(container, "touchmove")),
-        frp.merge(frp.createEventStream(container, "touchend")),
+        dom.touchStart(container),
+        frp.merge(dom.touchMove(container)),
+        frp.merge(dom.touchEnd(container)),
 
         frp.map(event => ({
             type: event.type,
