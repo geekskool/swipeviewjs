@@ -1,3 +1,3 @@
-import swipeview from "./swipeview"
+import { setup } from "./swipeview"
 
-swipeview("#container")
+setup("#container")

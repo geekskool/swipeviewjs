@@ -3,7 +3,7 @@
 import frp from "frpjs"
 import dom from "frpjs/dom"
 
-export default function(selector, slideWidth, slideHeight) {
+function setup(selector, slideWidth, slideHeight) {
     const view = new SwipeView(selector, slideWidth, slideHeight)
 
     let stream$ = frp.compose(
@@ -14,22 +14,30 @@ export default function(selector, slideWidth, slideHeight) {
         frp.map(event => ({
             type: event.type,
             pageX: getPageX(event),
-            time: event.timeStamp
+            pageY: getPageY(event),
+            time: event.timeStamp,
+            preventDefault: event.preventDefault.bind(event)
         })),
 
         frp.fold((prev, curr) => {
             curr.startX = (curr.type == "touchstart") ? curr.pageX : prev.startX
+            curr.startY = (curr.type == "touchstart") ? curr.pageY : prev.startY
             curr.startTime = (curr.type == "touchstart") ? curr.time : prev.startTime
-            curr.displacement = curr.pageX - curr.startX
-            curr.slideIndex = prev.slideIndex
+
+            curr.xDisplacement = curr.pageX - curr.startX
+            curr.yDisplacement = curr.pageY - curr.startY
+
+            curr.swipeIndex = prev.swipeIndex
 
             return curr
-        }, { slideIndex: 0 }),
+        }, { swipeIndex: 0 }),
 
         frp.map(event => {
-            if (event.type == "touchmove")
+            const displacementAngle = Math.abs(event.yDisplacement / event.xDisplacement)
+
+            if (event.type == "touchmove" && displacementAngle < 2)
                 event.move = view.handleTouchMove(event)
-            if (event.type == "touchend")
+            if (event.type == "touchend" && displacementAngle < 2)
                 event.move = view.handleTouchEnd(event)
 
             return event
@@ -41,6 +49,8 @@ export default function(selector, slideWidth, slideHeight) {
 
 function activateEventStream(event, view) {
     if (event.move) {
+        event.preventDefault()
+
         let { type, distance, time } = event.move
         if (type == "move")
             view.move(distance)
@@ -50,66 +60,62 @@ function activateEventStream(event, view) {
 }
 
 function SwipeView(selector, slideWidth, slideHeight) {
-    this.slideWidth  = slideWidth  || window.innerWidth
-    this.slideHeight = slideHeight || window.innerHeight
-
     this.container = dom.select(selector)
     this.slider    = this.container.firstElementChild
     this.slides    = this.slider.children
 
-    this.numSlides   = this.slides.length
-    this.edgePadding = this.slideWidth / 10
-
     this.setupStyles()
+
+    this.containerWidth = this.container.getBoundingClientRect().width
+    this.scrollWidth = this.slider.scrollWidth
+
+    this.numSwipes = Math.floor(this.scrollWidth / this.containerWidth)
+    this.edgePadding = this.containerWidth / 10
 }
 
 SwipeView.prototype.setupStyles = function() {
-    this.container.style["width"]    = this.slideWidth + "px"
-    this.container.style["height"]   = this.slideHeight + "px"
     this.container.style["overflow"] = "hidden"
 
-    this.slider.style["width"]     = this.numSlides * 100 + "%"
-    this.slider.style["height"]    = "100%"
+    this.slider.style["white-space"] = "nowrap"
+    this.slider.style["letter-spacing"] = "-.25em"
     this.slider.style["transform"] = "translate3d(0, 0, 0)"
 
-    let slideWidth = this.slideWidth, slideHeight = this.slideHeight
     Array.prototype.forEach.call(this.slides, function(slide) {
-        slide.style["width"]  = slideWidth + "px"
-        slide.style["height"] = slideHeight + "px"
-        slide.style["float"]  = "left"
-    })        
+        slide.style["display"] = "inline-block"
+        slide.style["letter-spacing"] = "normal"
+    })
 }
 
 SwipeView.prototype.canSlideLeft = function(event) {
-    return (event.displacement > 0 && event.slideIndex > 0)
+    return (event.xDisplacement > 0 && event.swipeIndex > 0)
 }
 
 SwipeView.prototype.canSlideRight = function(event) {
-    return (event.displacement < 0 && event.slideIndex < this.numSlides - 1)
+    return (event.xDisplacement < 0 && event.swipeIndex < this.numSwipes - 1)
 }
 
 SwipeView.prototype.isPullingEdge = function(event) {
     let sliderPosition = this.slider.getBoundingClientRect().left
-    let nMinusOneSlides = (this.numSlides - 1) * this.slideWidth // width of (n - 1) slides
+    let nMinusOneScreens = (this.numSwipes - 1) * this.containerWidth // width of (n - 1) screens
 
     return ((0 <= sliderPosition && sliderPosition < this.edgePadding) ||
-            (-nMinusOneSlides - this.edgePadding < sliderPosition && sliderPosition <= -nMinusOneSlides))
+            (-nMinusOneScreens - this.edgePadding < sliderPosition && sliderPosition <= -nMinusOneScreens))
 }
 
 SwipeView.prototype.hasCrossedMidPoint = function(event) {
-    return Math.abs(event.displacement) > this.slideWidth/2
+    return Math.abs(event.xDisplacement) > this.containerWidth/2
 }
 
 SwipeView.prototype.isFlicked = function(event) {
-    return getSpeed(event) > 1
+    return getSpeed(event) > 0.5
 }
 
 SwipeView.prototype.handleTouchMove = function(event) {
     if (this.canSlideLeft(event) || this.canSlideRight(event)) {
-        let distance = -(event.slideIndex * this.slideWidth) + event.displacement
+        let distance = -(event.swipeIndex * this.containerWidth) + event.xDisplacement
         return { type: "move", distance: distance }
     } else if (this.isPullingEdge(event)) {
-        let distance = -(event.slideIndex * this.slideWidth) + (this.edgePadding / this.slideWidth) * event.displacement
+        let distance = -(event.swipeIndex * this.containerWidth) + (this.edgePadding / this.containerWidth) * event.xDisplacement
         return { type: "move", distance: distance }
     }
 }
@@ -117,12 +123,12 @@ SwipeView.prototype.handleTouchMove = function(event) {
 SwipeView.prototype.handleTouchEnd = function(event) {
     if (this.hasCrossedMidPoint(event) || this.isFlicked(event)) {
         if (this.canSlideRight(event))
-            event.slideIndex++
+            event.swipeIndex++
         else if (this.canSlideLeft(event))
-            event.slideIndex--
+            event.swipeIndex--
     }
 
-    let distance = -(event.slideIndex * this.slideWidth)
+    let distance = -(event.swipeIndex * this.containerWidth)
     let time     = this.isFlicked(event) ? 150 : 300
     return { type: "animate", distance: distance, time: time }
 }
@@ -138,10 +144,17 @@ SwipeView.prototype.move = function(translateX) {
 }
 
 function getSpeed(event) {
-    return Math.abs(event.displacement) / (event.time - event.startTime)
+    return Math.abs(event.xDisplacement) / (event.time - event.startTime)
 }
 
 function getPageX(event) {
     return (event.type == "touchend") ?
       event.changedTouches[0].pageX : event.targetTouches[0].pageX
 }
+
+function getPageY(event) {
+    return (event.type == "touchend") ?
+      event.changedTouches[0].pageY : event.targetTouches[0].pageY
+}
+
+export { setup }
