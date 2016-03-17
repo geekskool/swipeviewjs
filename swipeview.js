@@ -3,7 +3,7 @@
 import frp from "frpjs"
 import dom from "frpjs/dom"
 
-export default function(selector, slideWidth, slideHeight) {
+function setup(selector, slideWidth, slideHeight) {
     const view = new SwipeView(selector, slideWidth, slideHeight)
 
     let stream$ = frp.compose(
@@ -14,22 +14,30 @@ export default function(selector, slideWidth, slideHeight) {
         frp.map(event => ({
             type: event.type,
             pageX: getPageX(event),
-            time: event.timeStamp
+            pageY: getPageY(event),
+            time: event.timeStamp,
+            preventDefault: event.preventDefault.bind(event)
         })),
 
         frp.fold((prev, curr) => {
             curr.startX = (curr.type == "touchstart") ? curr.pageX : prev.startX
+            curr.startY = (curr.type == "touchstart") ? curr.pageY : prev.startY
             curr.startTime = (curr.type == "touchstart") ? curr.time : prev.startTime
-            curr.displacement = curr.pageX - curr.startX
+
+            curr.xDisplacement = curr.pageX - curr.startX
+            curr.yDisplacement = curr.pageY - curr.startY
+
             curr.slideIndex = prev.slideIndex
 
             return curr
         }, { slideIndex: 0 }),
 
         frp.map(event => {
-            if (event.type == "touchmove")
+            const displacementAngle = Math.abs(event.yDisplacement / event.xDisplacement)
+
+            if (event.type == "touchmove" && displacementAngle < 2)
                 event.move = view.handleTouchMove(event)
-            if (event.type == "touchend")
+            if (event.type == "touchend" && displacementAngle < 2)
                 event.move = view.handleTouchEnd(event)
 
             return event
@@ -41,6 +49,8 @@ export default function(selector, slideWidth, slideHeight) {
 
 function activateEventStream(event, view) {
     if (event.move) {
+        event.preventDefault()
+
         let { type, distance, time } = event.move
         if (type == "move")
             view.move(distance)
@@ -77,15 +87,15 @@ SwipeView.prototype.setupStyles = function() {
         slide.style["width"]  = slideWidth + "px"
         slide.style["height"] = slideHeight + "px"
         slide.style["float"]  = "left"
-    })        
+    })
 }
 
 SwipeView.prototype.canSlideLeft = function(event) {
-    return (event.displacement > 0 && event.slideIndex > 0)
+    return (event.xDisplacement > 0 && event.slideIndex > 0)
 }
 
 SwipeView.prototype.canSlideRight = function(event) {
-    return (event.displacement < 0 && event.slideIndex < this.numSlides - 1)
+    return (event.xDisplacement < 0 && event.slideIndex < this.numSlides - 1)
 }
 
 SwipeView.prototype.isPullingEdge = function(event) {
@@ -97,19 +107,19 @@ SwipeView.prototype.isPullingEdge = function(event) {
 }
 
 SwipeView.prototype.hasCrossedMidPoint = function(event) {
-    return Math.abs(event.displacement) > this.slideWidth/2
+    return Math.abs(event.xDisplacement) > this.slideWidth/2
 }
 
 SwipeView.prototype.isFlicked = function(event) {
-    return getSpeed(event) > 1
+    return getSpeed(event) > 0.8
 }
 
 SwipeView.prototype.handleTouchMove = function(event) {
     if (this.canSlideLeft(event) || this.canSlideRight(event)) {
-        let distance = -(event.slideIndex * this.slideWidth) + event.displacement
+        let distance = -(event.slideIndex * this.slideWidth) + event.xDisplacement
         return { type: "move", distance: distance }
     } else if (this.isPullingEdge(event)) {
-        let distance = -(event.slideIndex * this.slideWidth) + (this.edgePadding / this.slideWidth) * event.displacement
+        let distance = -(event.slideIndex * this.slideWidth) + (this.edgePadding / this.slideWidth) * event.xDisplacement
         return { type: "move", distance: distance }
     }
 }
@@ -138,10 +148,17 @@ SwipeView.prototype.move = function(translateX) {
 }
 
 function getSpeed(event) {
-    return Math.abs(event.displacement) / (event.time - event.startTime)
+    return Math.abs(event.xDisplacement) / (event.time - event.startTime)
 }
 
 function getPageX(event) {
     return (event.type == "touchend") ?
       event.changedTouches[0].pageX : event.targetTouches[0].pageX
 }
+
+function getPageY(event) {
+    return (event.type == "touchend") ?
+      event.changedTouches[0].pageY : event.targetTouches[0].pageY
+}
+
+export { setup }
