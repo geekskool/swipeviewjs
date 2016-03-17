@@ -4,7 +4,7 @@
   "description": "A library for smooth touch-based content sliders",
   "main": "swipeview.js",
   "scripts": {
-    "build": "browserify -r ./swipeview.js:swipeview -t babelify -o swipeview-bundle.js"
+    "build": "browserify swipeview.js -t babelify --standalone swipeview > build/swipeview-bundle.js"
   },
   "repository": {
     "type": "git",
